@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mínimos Cuadrados</title>
+<meta name="description" content="Simulador interactivo de regresión por mínimos cuadrados: diagramas de dispersión, recta propia, residuales, suma de cuadrados, recta de mejor ajuste y coeficiente de correlación. Laboratorio de Estadística, CCH-UNAM.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,600;1,8..60,400;1,8..60,600&display=swap" media="print" onload="this.media='all'">
+<style>
+  :root {
+    --navy: #1F3864; --ink: #1B2433; --muted: #5A6578; --paper: #F4F6FA; --surface: #FFFFFF;
+    --line: #C9D3E3; --zebra: #EEF2F8; --head-text: #FFFFFF; --focus: #3B6FD6;
+    --warn-bg: #FFF4E0; --warn-ink: #7A4B00; --ok-bg: #E6F3EA; --ok-ink: #1E5B32; --bad-bg: #FBE7E6; --bad-ink: #B3261E;
+    --sans: "Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --navy: #8FB0E8; --ink: #E4E9F2; --muted: #A3AEC2; --paper: #121722; --surface: #1A2130;
+      --line: #33405A; --zebra: #1F2839; --head-text: #0F1420; --focus: #8FB0E8;
+      --warn-bg: #3A2C12; --warn-ink: #F3D39A; --ok-bg: #16301F; --ok-ink: #9ED6AE; --bad-bg: #3A1D1C; --bad-ink: #F2A39D;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --navy: #8FB0E8; --ink: #E4E9F2; --muted: #A3AEC2; --paper: #121722; --surface: #1A2130;
+    --line: #33405A; --zebra: #1F2839; --head-text: #0F1420; --focus: #8FB0E8;
+    --warn-bg: #3A2C12; --warn-ink: #F3D39A; --ok-bg: #16301F; --ok-ink: #9ED6AE; --bad-bg: #3A1D1C; --bad-ink: #F2A39D;
+  }
+  [hidden] { display: none !important; }
+  * { box-sizing: border-box; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.5; margin: 0; }
+  header.barra { background: var(--navy); color: var(--head-text); padding: 10px 16px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  header.barra h1 { margin: 0; font-family: var(--serif); font-weight: 600; font-size: 1.35rem; }
+  header.barra span { font-size: .8rem; opacity: .85; }
+  .app { display: grid; grid-template-columns: 290px minmax(0, 1fr) 300px; grid-template-areas: "izq graf der"; gap: 14px; padding: 14px 16px 24px; max-width: 1500px; margin: 0 auto; align-items: start; }
+  .izq { grid-area: izq; } .grafica { grid-area: graf; } .der { grid-area: der; }
+  @media (max-width: 1150px) { .app { grid-template-columns: minmax(0, 1fr) 320px; grid-template-areas: "graf der" "izq der"; } }
+  @media (max-width: 760px) { .app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "graf" "der" "izq"; } }
+  .selTop { margin-bottom: 8px; }
+  .vert { display: flex; justify-content: center; gap: 40px; margin: 6px 0; }
+  .vert > div { display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 700; color: var(--navy); }
+  @media (min-width: 761px) { .vert input[type="range"] { writing-mode: vertical-lr; direction: rtl; width: 34px; height: 200px; } }
+  @media (max-width: 760px) { .vert { display: grid; gap: 4px; } .vert > div { flex-direction: row; } .vert > div input { flex: 1; } }
+  .grafica { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; position: sticky; top: 10px; min-width: 0; }
+  @media (max-width: 760px) { .grafica { position: static; } }
+  .grafica canvas { display: block; width: 100%; border-radius: 6px; background: #fff; touch-action: none; }
+  .bajo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+  .lectura { font-variant-numeric: tabular-nums; font-size: .95rem; color: var(--muted); }
+  .panel { display: grid; gap: 10px; min-width: 0; }
+  .caja { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .caja h2 { margin: 0 0 6px; font-size: 1rem; color: var(--navy); display: flex; align-items: center; gap: 8px; }
+  details.caja > summary { cursor: pointer; font-weight: 700; color: var(--navy); list-style: none; }
+  details.caja > summary::before { content: "▸ "; } details.caja[open] > summary::before { content: "▾ "; }
+  details.caja[open] > summary { margin-bottom: 8px; }
+  label.c { display: flex; align-items: center; gap: 7px; font-size: .95rem; cursor: pointer; }
+  input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--navy); margin: 0; flex: none; }
+  .fila { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+  select, input[type="text"], textarea { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%; }
+  textarea { min-height: 64px; resize: vertical; }
+  input[type="range"] { width: 100%; accent-color: var(--navy); height: 28px; }
+  .desl { display: grid; grid-template-columns: 84px 1fr 66px; gap: 6px; align-items: center; font-size: .9rem; }
+  .desl output { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ec { font-family: var(--serif); font-size: 1.08rem; font-variant-numeric: tabular-nums; margin: 4px 0; }
+  .suma { font-weight: 700; font-size: .93rem; font-variant-numeric: tabular-nums; }
+  .barra { display: grid; grid-template-columns: 92px 1fr 70px; gap: 6px; align-items: center; font-size: .9rem; margin: 3px 0; }
+  .barra span.b { height: 16px; border-radius: 3px; background: var(--zebra); position: relative; overflow: hidden; }
+  .barra span.b i { position: absolute; left: 0; top: 0; bottom: 0; display: block; transition: width .12s; }
+  .barra output { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .grande { font-size: 1.15rem; font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .hint { font-size: .85rem; color: var(--muted); }
+  button { font: inherit; font-weight: 700; border-radius: 6px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--navy); background: var(--navy); color: var(--head-text); }
+  button.sec, a.boton.sec { background: transparent; color: var(--navy); }
+  a.boton { display: inline-block; font-weight: 700; border-radius: 6px; padding: 8px 14px; border: 1px solid var(--navy); text-decoration: none; }
+  button.mini { padding: 5px 10px; font-size: .88rem; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .msg { border-radius: 6px; padding: 8px 11px; font-size: .9rem; margin: 6px 0 0; }
+  .msg.ok { background: var(--ok-bg); color: var(--ok-ink); } .msg.mal { background: var(--bad-bg); color: var(--bad-ink); } .msg.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: .9rem; }
+  th, td { border: 1px solid var(--line); padding: 3px 4px; text-align: center; }
+  thead th { background: var(--navy); color: var(--head-text); position: sticky; top: 0; }
+  .tabla { max-height: 300px; overflow: auto; border-radius: 6px; }
+  .tabla input { width: 100%; padding: 4px 5px; text-align: center; border-radius: 4px; }
+  .tabla button { padding: 2px 8px; }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .desc { font-size: .88rem; color: var(--muted); margin: 6px 0 0; }
+  footer { max-width: 1400px; margin: 0 auto; padding: 0 16px 24px; font-size: .8rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="barra"><h1>Mínimos cuadrados</h1><span>Laboratorio de Estadística · CCH-UNAM</span></header>
+<div class="app">
+  <aside class="panel izq">
+    <div class="caja">
+      <h2><label class="c"><input type="checkbox" id="mejor"> Recta de mejor ajuste</label></h2>
+      <div id="mejCtl" hidden>
+        <div class="ec" id="ecMej"></div>
+        <div class="fila"><label class="c"><input type="checkbox" id="bRes"> Residuales</label><label class="c"><input type="checkbox" id="bCua"> Residuales al cuadrado</label></div>
+        <div class="suma" id="sumMej" style="color:#0f7a57"></div>
+      </div>
+    </div>
+    <div class="caja">
+      <h2>Correlación</h2>
+      <div class="fila"><label class="c"><input type="checkbox" id="verR"> Coeficiente de correlación <i>r</i></label><label class="c"><input type="checkbox" id="verR2"> Coeficiente de determinación <i>r</i>²</label></div>
+      <div class="grande" id="valR" hidden></div>
+      <div class="hint" id="valR2" hidden></div>
+    </div>
+    <div class="caja">
+      <h2>Suma de los residuales al cuadrado</h2>
+      <div class="barra"><span>Mi recta</span><span class="b"><i id="bm" style="background:#eb6834"></i></span><output id="vm">—</output></div>
+      <div class="barra"><span>Mejor ajuste</span><span class="b"><i id="bb" style="background:#14966a"></i></span><output id="vb">—</output></div>
+      <p class="hint" style="margin:4px 0 0">Activa cada recta para ver su suma.</p>
+    </div>
+    <details class="caja" id="detMis">
+      <summary>Usar mis propios datos</summary>
+      <div class="duo"><div><label class="hint" for="nomX">Variable x</label><input type="text" id="nomX" placeholder="Estatura (cm)" autocomplete="off"></div><div><label class="hint" for="nomY">Variable y</label><input type="text" id="nomY" placeholder="Peso (kg)" autocomplete="off"></div></div>
+      <div class="duo" style="margin-top:6px"><div><label class="hint" for="datX">Datos de x</label><textarea id="datX" placeholder="160, 155.5, 171"></textarea></div><div><label class="hint" for="datY">Datos de y</label><textarea id="datY" placeholder="58, 52, 70"></textarea></div></div>
+      <p class="hint" style="margin:4px 0">Sepáralos con una coma y un espacio. Usa punto para los decimales. También puedes subir un archivo CSV con dos columnas (x, y); si la primera fila tiene nombres, se usan como títulos.</p>
+      <input type="file" id="csv" accept=".csv,text/csv,text/plain" aria-label="Archivo CSV">
+      <div class="actions"><button type="button" id="btnMis">Cargar mis datos</button></div>
+      <div class="msg" id="msgMis" hidden></div>
+    </details>
+    <details class="caja" id="detTabla">
+      <summary>Tabla de puntos</summary>
+      <div class="tabla"><table id="tabla"></table></div>
+      <div class="actions"><button type="button" class="sec mini" id="btnFila">＋ Agregar punto</button></div>
+    </details>
+  </aside>
+
+  <section class="grafica" aria-label="Gráfica">
+    <div class="selTop"><select id="selDatos" aria-label="Conjunto de datos"></select><p class="desc" id="descDatos"></p></div>
+    <canvas id="cv" role="img" aria-label="Diagrama de dispersión interactivo"></canvas>
+    <div class="bajo"><button type="button" class="sec mini" id="btnBorrar">🧽 Borrar puntos</button><button type="button" class="sec mini" id="btnFoto">📷 Guardar imagen</button><span class="lectura" id="lectura"></span></div>
+    <div class="msg" id="msgFoto" hidden></div>
+  </section>
+
+  <aside class="panel der">
+    <div class="caja">
+      <h2><label class="c"><input type="checkbox" id="mia"> Mi recta</label></h2>
+      <div id="miaCtl" hidden>
+        <div class="ec" id="ecMia"></div>
+        <div class="vert">
+          <div><span><i>a</i></span><input type="range" id="sa" min="-1000" max="1000" step="1" aria-label="Pendiente a de mi recta"><output id="oa"></output></div>
+          <div><span><i>b</i></span><input type="range" id="sb" min="-1000" max="1000" step="1" aria-label="Subir o bajar mi recta (ordenada b)"><output id="ob"></output></div>
+        </div>
+        <p class="hint" style="margin:2px 0 6px"><i>a</i> = pendiente (inclinación) · <i>b</i> = ordenada al origen (sube o baja la recta). También puedes arrastrar los dos puntos negros de la recta.</p>
+        <div class="fila"><label class="c"><input type="checkbox" id="mRes"> Residuales</label><label class="c"><input type="checkbox" id="mCua"> Residuales al cuadrado</label></div>
+        <div class="suma" id="sumMia" style="color:#c2410c"></div>
+      </div>
+    </div>
+    <div class="caja">
+      <div class="fila"><label class="c"><input type="checkbox" id="malla" checked> Cuadrícula</label><label class="c"><input type="checkbox" id="pred"> Predicción</label></div>
+      <p class="hint" id="predAyuda" hidden style="margin:4px 0 0">Arrastra el triángulo rojo bajo el eje x para elegir un valor de x: se marca el valor estimado ŷ sobre la recta de mejor ajuste (o sobre tu recta, si la de mejor ajuste está apagada).</p>
+      <div class="actions"><button type="button" class="sec mini" id="btnReiniciar">↺ Reiniciar todo</button></div>
+    </div>
+  </aside>
+</div>
+<footer>Simulador del Laboratorio de Estadística · Dr. Ignacio Cuauhtémoc Benítez Zúñiga · CCH-UNAM. Inspirado en «Mínimos cuadrados» de PhET Interactive Simulations (Universidad de Colorado). Los conjuntos de datos son simulados con fines didácticos. Todo se procesa en tu dispositivo.</footer>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const AZUL = "#2a78d6", ROJO = "#d03b2f", NARANJA = "#eb6834", VERDE = "#14966a", TINTA = "#1B2433", GRIS = "#5A6578", MORADO = "#5b3fd1";
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const fx = (x, d) => (Math.round(x * 10 ** d) / 10 ** d).toFixed(d).replace("-", "−");
+  const mostrar = (id, cls, html) => { const m = $(id); m.className = "msg " + cls; m.innerHTML = html; m.hidden = false; };
+  const CLAVE = "lab-estadistica-minimos-cuadrados-v1";
+
+  // ---------- Entrega de archivos (iPhone, Samsung y computadora) ----------
+  const UA = navigator.userAgent || "";
+  const ES_IOS = /iP(hone|ad|od)/.test(UA) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const ES_MOVIL = ES_IOS || /Android/i.test(UA);
+  let URL_PREVIA = null;
+  function entregar(blob, nombre, msgId, extra) {
+    if (URL_PREVIA) URL.revokeObjectURL(URL_PREVIA);
+    const url = URL_PREVIA = URL.createObjectURL(blob);
+    let archivo = null; try { archivo = new File([blob], nombre, { type: blob.type }); } catch (e) {}
+    const puedeCompartir = ES_MOVIL && archivo && navigator.canShare && navigator.canShare({ files: [archivo] });
+    if (!ES_MOVIL) { const a = document.createElement("a"); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); }
+    const guia = ES_IOS ? "<b>En iPhone:</b> " + (puedeCompartir ? "toca «Guardar o enviar» y elige <b>Guardar imagen</b> o <b>Guardar en Archivos</b>. " : "") + "También puedes tocar «Abrir» y guardarla desde ahí."
+      : ES_MOVIL ? "<b>En Android / Samsung:</b> " + (puedeCompartir ? "toca «Guardar o enviar»; o " : "") + "toca «Descargar» y búscala en <b>Mis archivos → Descargas</b>."
+      : "La imagen se descargó en tu carpeta de <b>Descargas</b>.";
+    const m = $(msgId); m.className = "msg ok"; m.hidden = false;
+    m.innerHTML = `${extra ? extra + "<br>" : ""}${guia}<div class="actions">` + (puedeCompartir ? `<button type="button" data-compartir>Guardar o enviar</button>` : "") +
+      `<a class="boton sec" href="${url}" target="_blank" rel="noopener">Abrir</a><a class="boton sec" href="${url}" download="${esc(nombre)}">Descargar</a></div>`;
+    const b = m.querySelector("[data-compartir]"); if (b) b.addEventListener("click", () => { navigator.share({ files: [archivo], title: nombre }).catch(() => {}); });
+  }
+
+  // ---------- Azar reproducible ----------
+  function azar(semilla) { let t = semilla >>> 0; return () => { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
+
+  // ---------- Estadística ----------
+  function stats(p) {
+    const n = p.length; if (n < 2) return { n, r: NaN, a: NaN, b: NaN };
+    let mx = 0, my = 0; p.forEach(q => { mx += q[0]; my += q[1]; }); mx /= n; my /= n;
+    let sxx = 0, syy = 0, sxy = 0; p.forEach(([x, y]) => { sxx += (x - mx) ** 2; syy += (y - my) ** 2; sxy += (x - mx) * (y - my); });
+    const a = sxx ? sxy / sxx : NaN;
+    return { n, mx, my, a, b: my - a * mx, r: sxx && syy ? sxy / Math.sqrt(sxx * syy) : NaN };
+  }
+  const sumaC = (p, a, b) => p.reduce((s, [x, y]) => s + (y - (a * x + b)) ** 2, 0);
+  const ecu = (a, b, d = 3) => `ŷ = ${fx(a, d)}x ${b < 0 ? "−" : "+"} ${fx(Math.abs(b), d)}`;
+  function grado(r) { const v = Math.abs(r); const g = v >= 0.8 ? "fuerte" : v >= 0.5 ? "moderada" : v >= 0.2 ? "débil" : "prácticamente nula"; return v < 0.2 ? "relación lineal prácticamente nula" : `relación lineal ${g} ${r > 0 ? "positiva" : "negativa"}`; }
+
+  // ---------- Conjuntos de datos (simulados) ----------
+  function genera(semilla, n, xr, a, b, r, dx, dy, ylim) {
+    const rnd = azar(semilla), g = () => { let u = 0; while (!u) u = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd()); };
+    const red = (v, d) => Math.round(v * 10 ** d) / 10 ** d;
+    let mejor = null, dmin = 9;
+    for (let k = 0; k < 80; k++) {
+      const xs = []; for (let i = 0; i < n; i++) xs.push(xr[0] + rnd() * (xr[1] - xr[0]));
+      const mx = xs.reduce((s, v) => s + v, 0) / n, sx = Math.sqrt(xs.reduce((s, v) => s + (v - mx) ** 2, 0) / n);
+      const sig = r === 0 ? Math.abs(ylim[1] - ylim[0]) / 6 : Math.abs(a) * sx * Math.sqrt(1 / (r * r) - 1);
+      const p = xs.map(x => { let y = a * x + b + sig * g(); y = Math.min(ylim[1], Math.max(ylim[0], y)); return [red(x, dx), red(y, dy)]; });
+      const d = Math.abs(stats(p).r - r); if (d < dmin) { dmin = d; mejor = p; } if (d < 0.02) break;
+    }
+    return mejor;
+  }
+  const DS = {
+    cubeta: { nombre: "Personalizado (cubeta)", xlab: "x", ylab: "y", desc: "Arrastra puntos desde la cubeta para crear tu propio diagrama.", p: [], fijo: [[0, 20], [0, 20]] },
+    est_peso: { nombre: "Estatura y peso", xlab: "Estatura (cm)", ylab: "Peso (kg)", desc: "Estatura y peso de 25 estudiantes de bachillerato.", p: genera(101, 25, [148, 185], 0.75, -64, 0.68, 0, 0, [38, 95]) },
+    brazo_palmo: { nombre: "Largo del brazo y palmo", xlab: "Largo del brazo (cm)", ylab: "Palmo (cm)", desc: "Largo del brazo (hombro a dedo medio) y palmo de 25 estudiantes.", p: genera(102, 25, [63, 82], 0.26, 2, 0.92, 0, 1, [15, 26]) },
+    temp_agua: { nombre: "Temperatura y botellas vendidas", xlab: "Temperatura máxima (°C)", ylab: "Botellas de agua vendidas", desc: "Temperatura máxima del día y botellas de agua vendidas en la cooperativa durante 20 días.", p: genera(103, 20, [15, 31], 9, -60, 0.88, 0, 0, [30, 260]) },
+    auto: { nombre: "Antigüedad y precio de autos", xlab: "Antigüedad (años)", ylab: "Precio (miles de pesos)", desc: "Antigüedad y precio de venta de 18 autos usados del mismo modelo.", p: genera(104, 18, [1, 14], -18, 330, -0.93, 0, 0, [60, 360]) },
+    juego_sueno: { nombre: "Videojuegos y horas de sueño", xlab: "Videojuegos (horas al día)", ylab: "Horas de sueño", desc: "Horas al día de videojuegos y horas de sueño de 22 adolescentes.", p: genera(105, 22, [0, 6], -0.45, 8.6, -0.66, 1, 1, [4, 10.5]) },
+    estudio_calif: { nombre: "Horas de estudio y calificación", xlab: "Horas de estudio a la semana", ylab: "Calificación", desc: "Horas de estudio a la semana y calificación del examen final de 24 estudiantes.", p: genera(106, 24, [1, 14], 0.32, 4.6, 0.62, 0, 1, [3, 10]) },
+    ejercicio_fc: { nombre: "Ejercicio y frecuencia cardiaca", xlab: "Ejercicio (minutos a la semana)", ylab: "Frecuencia cardiaca en reposo (lpm)", desc: "Minutos de ejercicio a la semana y frecuencia cardiaca en reposo de 20 adultos.", p: genera(107, 20, [30, 360], -0.06, 82, -0.58, 0, 0, [48, 95]) },
+    edad_estatura: { nombre: "Edad y estatura de niños", xlab: "Edad (años)", ylab: "Estatura (cm)", desc: "Edad y estatura de 22 niñas y niños de primaria.", p: genera(108, 22, [6, 12.9], 5.8, 82, 0.9, 1, 0, [105, 165]) },
+    altitud_temp: { nombre: "Altitud y temperatura media", xlab: "Altitud de la ciudad (m)", ylab: "Temperatura media anual (°C)", desc: "Altitud y temperatura media anual de 18 ciudades (datos aproximados).", p: genera(109, 18, [0, 2600], -0.0062, 26.5, -0.94, 0, 1, [10, 30]) },
+    calzado: { nombre: "Número de calzado y calificación", xlab: "Número de calzado", ylab: "Calificación", desc: "Número de calzado y calificación de 25 estudiantes. ¿Habrá relación?", p: genera(110, 25, [22, 29], 0, 7.6, 0, 1, 1, [4, 10]) },
+    mis: { nombre: "Mis datos", xlab: "x", ylab: "y", desc: "Los datos que cargaste en «Usar mis propios datos».", p: [] }
+  };
+  const ORDEN = ["cubeta", "est_peso", "brazo_palmo", "temp_agua", "auto", "juego_sueno", "estudio_calif", "ejercicio_fc", "edad_estatura", "altitud_temp", "calzado", "mis"];
+
+  // ---------- Estado ----------
+  const INI = () => ({ ds: "brazo_palmo", pts: {}, lin: {}, ctl: { malla: true }, mis: null, predX: {} });
+  let S = INI();
+  try { const g = JSON.parse(localStorage.getItem(CLAVE) || "null"); if (g) S = Object.assign(INI(), g); } catch (e) {}
+  const guardarYa = () => { try { localStorage.setItem(CLAVE, JSON.stringify(S)); } catch (e) {} };
+  let tG = null; const guardar = () => { clearTimeout(tG); tG = setTimeout(guardarYa, 300); };
+  window.addEventListener("pagehide", guardarYa); document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") guardarYa(); });
+  if (S.mis) { DS.mis.p = S.mis.p; DS.mis.xlab = S.mis.x; DS.mis.ylab = S.mis.y; }
+  const ptsDe = (k) => S.pts[k] || (S.pts[k] = DS[k].p.map(q => q.slice()));
+  const chk = (id) => $(id).checked;
+
+  // ---------- Dibujo ----------
+  function pasoBonito(rango, n) { const c = rango / n, m = Math.pow(10, Math.floor(Math.log10(c))), q = c / m; return (q <= 1 ? 1 : q <= 2 ? 2 : q <= 2.5 ? 2.5 : q <= 5 ? 5 : 10) * m; }
+  function decs(p) { return p >= 1 ? 0 : p >= 0.1 ? 1 : 2; }
+  function rangoDe(v, pad = 0.12) { let lo = Math.min(...v), hi = Math.max(...v); if (lo === hi) { lo -= 1; hi += 1; } const p = (hi - lo) * pad; return [lo - p, hi + p]; }
+  function rangos() { const d = DS[S.ds]; if (d.fijo) return d.fijo; const base = d.p.length ? d.p : ptsDe(S.ds); if (!base.length) return [[0, 20], [0, 20]]; return [rangoDe(base.map(q => q[0])), rangoDe(base.map(q => q[1]))]; }
+  function punto(ctx, x, y, rad, color, borde) { ctx.beginPath(); ctx.arc(x, y, rad, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = borde || "#FFFFFF"; ctx.stroke(); }
+  let XR = [0, 20], YR = [0, 20], P = null, Hp = 0, W = 0, arrastre = null, flot = null;
+  const BANDA = 76;
+  const xc = () => (XR[0] + XR[1]) / 2, yc = () => (YR[0] + YR[1]) / 2, aMax = () => 3 * (YR[1] - YR[0]) / (XR[1] - XR[0]);
+  function mia() { if (!S.lin[S.ds]) S.lin[S.ds] = { a: 0, c: yc() }; const L = S.lin[S.ds]; return { a: L.a, b: L.c - L.a * xc() }; }
+  const asasX = () => [XR[0] + (XR[1] - XR[0]) * 0.15, XR[0] + (XR[1] - XR[0]) * 0.85];
+  function plano(ctx, Wd, Hd, titulo) {
+    const s = Math.min(1.35, Math.max(1, Wd / 560)); ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, Wd, Hd);
+    const top = (titulo ? 32 : 14) * s, L = 60 * s, Rm = 16 * s, B = Hd - 48 * s;
+    const X = (v) => L + (v - XR[0]) / (XR[1] - XR[0]) * (Wd - Rm - L), Y = (v) => B - (v - YR[0]) / (YR[1] - YR[0]) * (B - top);
+    const iX = (px) => XR[0] + (px - L) / (Wd - Rm - L) * (XR[1] - XR[0]), iY = (py) => YR[0] + (B - py) / (B - top) * (YR[1] - YR[0]);
+    if (titulo) { ctx.fillStyle = TINTA; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic"; ctx.font = `600 ${Math.round(15 * s)}px "Source Serif 4", Georgia, serif`; ctx.fillText(titulo, Wd / 2, 21 * s); }
+    ctx.font = `${Math.round(11.5 * s)}px "Source Sans 3", Arial, sans-serif`; ctx.lineWidth = 1;
+    const py = pasoBonito(YR[1] - YR[0], 6), px = pasoBonito(XR[1] - XR[0], Math.max(4, Math.round(Wd / 100)));
+    for (let t = Math.ceil(YR[0] / py - 1e-9) * py; t <= YR[1] + 1e-9; t += py) { const yy = Y(t); if (chk("malla")) { ctx.strokeStyle = "#E4E9F1"; ctx.beginPath(); ctx.moveTo(L, yy); ctx.lineTo(Wd - Rm, yy); ctx.stroke(); } ctx.fillStyle = GRIS; ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText(fx(t, decs(py)), L - 5 * s, yy); }
+    for (let t = Math.ceil(XR[0] / px - 1e-9) * px; t <= XR[1] + 1e-9; t += px) { const xx = X(t); if (chk("malla")) { ctx.strokeStyle = "#E4E9F1"; ctx.beginPath(); ctx.moveTo(xx, top); ctx.lineTo(xx, B); ctx.stroke(); } ctx.fillStyle = GRIS; ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(fx(t, decs(px)), xx, B + 5 * s); }
+    ctx.strokeStyle = "#7A8599"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(L, top); ctx.lineTo(L, B); ctx.lineTo(Wd - Rm, B); ctx.stroke();
+    const d = DS[S.ds]; ctx.fillStyle = TINTA; ctx.font = `600 ${Math.round(12.5 * s)}px "Source Sans 3", Arial, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText(d.xlab, L + (Wd - Rm - L) / 2, Hd - 9 * s); ctx.save(); ctx.translate(15 * s, (top + B) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(d.ylab, 0, 0); ctx.restore();
+    return { X, Y, iX, iY, L, R: Wd - Rm, T: top, B, s };
+  }
+  function escena(ctx, Wd, Hd, foto) {
+    const p = ptsDe(S.ds), est = stats(p), L = mia(), verM = chk("mia"), verB = chk("mejor") && !isNaN(est.a);
+    const Pp = plano(ctx, Wd, Hd, foto ? DS[S.ds].nombre : null);
+    ctx.save(); ctx.beginPath(); ctx.rect(Pp.L, Pp.T, Pp.R - Pp.L, Pp.B - Pp.T); ctx.clip();
+    const cuadros = (a, b, borde, relleno) => p.forEach(([x, y]) => { const py = Pp.Y(y), ql = Pp.Y(a * x + b), lado = Math.abs(ql - py), px = Pp.X(x), x0 = ql > py ? px : px - lado; ctx.fillStyle = relleno; ctx.strokeStyle = borde; ctx.lineWidth = 1; ctx.fillRect(x0, Math.min(py, ql), lado, lado); ctx.strokeRect(x0, Math.min(py, ql), lado, lado); });
+    const resid = (a, b, color, w) => p.forEach(([x, y]) => { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(Pp.X(x), Pp.Y(y)); ctx.lineTo(Pp.X(x), Pp.Y(a * x + b)); ctx.stroke(); });
+    const linea = (a, b, color, w, dash) => { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.setLineDash(dash || []); ctx.beginPath(); ctx.moveTo(Pp.X(XR[0]), Pp.Y(a * XR[0] + b)); ctx.lineTo(Pp.X(XR[1]), Pp.Y(a * XR[1] + b)); ctx.stroke(); ctx.setLineDash([]); };
+    if (verB && chk("bCua")) cuadros(est.a, est.b, "rgba(20,150,106,.8)", "rgba(20,150,106,.14)");
+    if (verM && chk("mCua")) cuadros(L.a, L.b, "rgba(235,104,52,.85)", "rgba(235,104,52,.16)");
+    if (verB && chk("bRes")) resid(est.a, est.b, VERDE, 2);
+    if (verM && chk("mRes")) resid(L.a, L.b, NARANJA, 2.5);
+    if (verB) linea(est.a, est.b, VERDE, 3, [9, 5]);
+    if (verM) linea(L.a, L.b, MORADO, 3);
+    // predicción
+    let pr = null;
+    if (chk("pred") && (verB || verM)) {
+      const px = S.predX[S.ds] != null ? S.predX[S.ds] : xc(), A = verB ? est.a : L.a, Bb = verB ? est.b : L.b, yh = A * px + Bb;
+      ctx.strokeStyle = ROJO; ctx.lineWidth = 2; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(Pp.X(px), Pp.B); ctx.lineTo(Pp.X(px), Pp.Y(yh)); ctx.lineTo(Pp.L, Pp.Y(yh)); ctx.stroke(); ctx.setLineDash([]);
+      punto(ctx, Pp.X(px), Pp.Y(yh), 6 * Pp.s, ROJO, "#fff"); pr = { px, yh };
+    }
+    ctx.restore();
+    p.forEach(([x, y], k) => { if (arrastre && arrastre.k === k) return; punto(ctx, Pp.X(x), Pp.Y(y), 7.5 * Pp.s, AZUL); });
+    if (verM && !foto) asasX().forEach(x => punto(ctx, Pp.X(x), Pp.Y(L.a * x + L.b), 10.5 * Pp.s, TINTA));
+    if (pr) {
+      if (!foto) { ctx.fillStyle = ROJO; ctx.beginPath(); ctx.moveTo(Pp.X(pr.px), Pp.B - 2); ctx.lineTo(Pp.X(pr.px) - 9, Pp.B + 14); ctx.lineTo(Pp.X(pr.px) + 9, Pp.B + 14); ctx.closePath(); ctx.fill(); }
+      ctx.font = `700 ${Math.round(12.5 * Pp.s)}px "Source Sans 3", Arial, sans-serif`; const t = `x = ${fx(pr.px, 2)}  →  ŷ = ${fx(pr.yh, 2)}`, w = ctx.measureText(t).width + 12;
+      const bx = Math.min(Math.max(Pp.X(pr.px) + 8, Pp.L + 4), Pp.R - w - 4), by = Math.max(Pp.T + 4, Pp.Y(pr.yh) - 30);
+      ctx.fillStyle = "rgba(255,255,255,.95)"; ctx.fillRect(bx, by, w, 22 * Pp.s); ctx.strokeStyle = ROJO; ctx.lineWidth = 1; ctx.strokeRect(bx, by, w, 22 * Pp.s); ctx.fillStyle = ROJO; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(t, bx + 6, by + 11 * Pp.s);
+    }
+    const et = [];
+    if (chk("verR") && !isNaN(est.r)) et.push([`r = ${fx(est.r, 3)}` + (chk("verR2") ? `   r² = ${fx(est.r * est.r, 3)}` : ""), ROJO]);
+    else if (chk("verR2") && !isNaN(est.r)) et.push([`r² = ${fx(est.r * est.r, 3)}`, ROJO]);
+    if (verM && (foto || chk("mCua"))) et.push([(foto ? `Mi recta: ${ecu(L.a, L.b)}  ` : "Mi recta: ") + `suma = ${fx(sumaC(p, L.a, L.b), 2)}`, foto ? MORADO : NARANJA]);
+    if (verB && (foto || chk("bCua"))) et.push([(foto ? `Mejor ajuste: ${ecu(est.a, est.b)}  ` : "Mejor ajuste: ") + `suma = ${fx(sumaC(p, est.a, est.b), 2)}`, VERDE]);
+    if (et.length) { ctx.font = `700 ${Math.round(12.5 * Pp.s)}px "Source Sans 3", Arial, sans-serif`; const w = Math.max(...et.map(t => ctx.measureText(t[0]).width)) + 14; ctx.fillStyle = "rgba(255,255,255,.93)"; ctx.fillRect(Pp.L + 6, Pp.T + 4, w, et.length * 18 * Pp.s + 8); ctx.textAlign = "left"; ctx.textBaseline = "top"; et.forEach((t, k) => { ctx.fillStyle = t[1]; ctx.fillText(t[0], Pp.L + 13, Pp.T + 9 + k * 18 * Pp.s); }); }
+    return Pp;
+  }
+  function dibujar() {
+    const cv = $("cv"); W = Math.max(270, cv.parentElement.clientWidth - 20);
+    const alto = window.innerWidth > 760 ? Math.min(window.innerHeight - 150, W * 0.72) : W * 0.82;
+    Hp = Math.round(Math.max(290, Math.min(640, alto)));
+    [XR, YR] = rangos();
+    const dpr = window.devicePixelRatio || 1; cv.width = Math.round(W * dpr); cv.height = Math.round((Hp + BANDA) * dpr); cv.style.height = (Hp + BANDA) + "px";
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    P = escena(ctx, W, Hp, false);
+    ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, Hp, W, BANDA);
+    const bx = 14, by = Hp + 12, bw = 124, bh = BANDA - 22;
+    ctx.fillStyle = "#c9d3e3"; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + bw, by); ctx.lineTo(bx + bw - 12, by + bh); ctx.lineTo(bx + 12, by + bh); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#8a96ab"; ctx.fillRect(bx - 4, by - 4, bw + 8, 8);
+    for (let k = 0; k < 9; k++) punto(ctx, bx + 22 + (k % 5) * 20, by + 15 + Math.floor(k / 5) * 17, 7.5, AZUL);
+    ctx.fillStyle = GRIS; ctx.font = `13px "Source Sans 3", Arial, sans-serif`; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    const t = "← Arrastra puntos desde la cubeta a la gráfica. Para quitar uno, regrésalo a la cubeta.", xt = bx + bw + 14, wt = W - xt - 8;
+    const lineas = [""]; t.split(" ").forEach(w => { const k = lineas.length - 1; if (ctx.measureText(lineas[k] + w).width < wt || !lineas[k]) lineas[k] += w + " "; else lineas.push(w + " "); });
+    lineas.forEach((l, k) => ctx.fillText(l, xt, by + bh / 2 + (k - (lineas.length - 1) / 2) * 16));
+    if (flot) punto(ctx, flot.px, flot.py, 9.5 * P.s, AZUL, TINTA);
+    actualizar();
+  }
+  function actualizar() {
+    const p = ptsDe(S.ds), est = stats(p), L = mia();
+    $("miaCtl").hidden = !chk("mia"); $("mejCtl").hidden = !chk("mejor"); $("predAyuda").hidden = !chk("pred");
+    $("ecMia").innerHTML = `<span style="color:${MORADO}">${ecu(L.a, L.b)}</span>`;
+    $("sa").value = Math.round(L.a / aMax() * 1000); $("sb").value = Math.round((S.lin[S.ds].c - yc()) / ((YR[1] - YR[0]) / 2) * 1000);
+    $("oa").textContent = fx(L.a, 3); $("ob").textContent = fx(L.b, 2);
+    $("sumMia").textContent = chk("mCua") ? `Suma de los residuales al cuadrado = ${fx(sumaC(p, L.a, L.b), 2)}` : "";
+    $("ecMej").innerHTML = isNaN(est.a) ? "Se necesitan al menos 2 puntos con distinta x." : `<span style="color:${VERDE}">${ecu(est.a, est.b)}</span>`;
+    $("sumMej").textContent = chk("bCua") && !isNaN(est.a) ? `Suma de los residuales al cuadrado = ${fx(sumaC(p, est.a, est.b), 2)}` : "";
+    const sm = chk("mia") ? sumaC(p, L.a, L.b) : NaN, sb = chk("mejor") && !isNaN(est.a) ? sumaC(p, est.a, est.b) : NaN, ref = Math.max(isNaN(sm) ? 0 : sm, (isNaN(sb) ? 0 : sb) * 4, 1e-9);
+    $("bm").style.width = isNaN(sm) ? "0" : Math.min(100, sm / ref * 100) + "%"; $("vm").textContent = isNaN(sm) ? "—" : fx(sm, 2);
+    $("bb").style.width = isNaN(sb) ? "0" : Math.min(100, sb / ref * 100) + "%"; $("vb").textContent = isNaN(sb) ? "—" : fx(sb, 2);
+    $("valR").hidden = !chk("verR"); $("valR2").hidden = !chk("verR2");
+    $("valR").textContent = isNaN(est.r) ? "r: se necesitan al menos 2 puntos que no estén alineados vertical u horizontalmente" : `r = ${fx(est.r, 3)} · ${grado(est.r)}`;
+    $("valR2").textContent = isNaN(est.r) ? "" : `r² = ${fx(est.r * est.r, 3)}: la recta de mejor ajuste explica el ${fx(est.r * est.r * 100, 1)} % de la variación de y.`;
+    $("lectura").textContent = `n = ${p.length} puntos`;
+    pintarTabla(false);
+  }
+
+  // ---------- Controles ----------
+  $("selDatos").innerHTML = ORDEN.map(k => `<option value="${k}">${esc(DS[k].nombre)}</option>`).join("");
+  function ponerDatos() { if (!ORDEN.includes(S.ds) || (S.ds === "mis" && !DS.mis.p.length)) S.ds = "brazo_palmo"; $("selDatos").value = S.ds; $("descDatos").textContent = DS[S.ds].desc; }
+  $("selDatos").addEventListener("change", () => { S.ds = $("selDatos").value; if (S.ds === "mis" && !DS.mis.p.length) { $("detMis").open = true; $("detMis").scrollIntoView({ behavior: "smooth" }); } $("descDatos").textContent = DS[S.ds].desc; guardar(); dibujar(); pintarTabla(true); });
+  const CHKS = ["mia", "mRes", "mCua", "mejor", "bRes", "bCua", "verR", "verR2", "malla", "pred"];
+  CHKS.forEach(id => { if (S.ctl[id] != null) $(id).checked = S.ctl[id]; $(id).addEventListener("change", () => { S.ctl[id] = $(id).checked; guardar(); dibujar(); }); });
+  $("sa").addEventListener("input", () => { mia(); S.lin[S.ds].a = $("sa").value / 1000 * aMax(); guardar(); dibujar(); });
+  $("sb").addEventListener("input", () => { mia(); S.lin[S.ds].c = yc() + $("sb").value / 1000 * (YR[1] - YR[0]) / 2; guardar(); dibujar(); });
+  $("btnBorrar").addEventListener("click", () => { S.pts[S.ds] = []; guardar(); dibujar(); pintarTabla(true); });
+  $("btnReiniciar").addEventListener("click", () => { S = INI(); if (DS.mis.p.length) S.mis = { p: DS.mis.p, x: DS.mis.xlab, y: DS.mis.ylab }; CHKS.forEach(id => $(id).checked = id === "malla"); ponerDatos(); guardarYa(); dibujar(); pintarTabla(true); $("msgFoto").hidden = true; });
+
+  // ---------- Arrastre ----------
+  const cv = $("cv"), pos = (ev) => { const r = cv.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
+  const dentro = (px, py) => px >= P.L && px <= P.R && py >= P.T && py <= P.B;
+  cv.addEventListener("pointerdown", (ev) => {
+    const m = pos(ev), p = ptsDe(S.ds);
+    const toma = (o) => { arrastre = o; cv.setPointerCapture(ev.pointerId); ev.preventDefault(); };
+    if (chk("mia")) { const L = mia(), xs = asasX(); for (let k = 0; k < 2; k++) if (Math.hypot(m.x - P.X(xs[k]), m.y - P.Y(L.a * xs[k] + L.b)) < 26) return toma({ asa: k }); }
+    if (chk("pred") && (chk("mejor") || chk("mia"))) { const px = S.predX[S.ds] != null ? S.predX[S.ds] : xc(); if (Math.abs(m.x - P.X(px)) < 16 && m.y > P.B - 6 && m.y < P.B + 26) return toma({ pred: true }); }
+    let mejor = -1, d0 = 22 * 22; p.forEach(([x, y], k) => { const d = (P.X(x) - m.x) ** 2 + (P.Y(y) - m.y) ** 2; if (d < d0) { d0 = d; mejor = k; } });
+    if (mejor >= 0) { flot = { px: m.x, py: m.y }; toma({ k: mejor }); dibujar(); return; }
+    if (m.y > Hp && m.x < 160) { flot = { px: m.x, py: m.y }; toma({ nuevo: true }); dibujar(); }
+  });
+  cv.addEventListener("pointermove", (ev) => {
+    if (!arrastre) return; const m = pos(ev);
+    if (arrastre.asa != null) { const xs = asasX(), L = mia(), k = arrastre.asa, o = 1 - k, yO = L.a * xs[o] + L.b, yN = Math.min(YR[1], Math.max(YR[0], P.iY(m.y))); const a = Math.max(-aMax(), Math.min(aMax(), (yN - yO) / (xs[k] - xs[o]))), b = yO - a * xs[o]; S.lin[S.ds] = { a, c: a * xc() + b }; dibujar(); return; }
+    if (arrastre.pred) { S.predX[S.ds] = Math.min(XR[1], Math.max(XR[0], P.iX(m.x))); dibujar(); return; }
+    flot = { px: m.x, py: m.y }; if (arrastre.k != null && dentro(m.x, m.y)) ptsDe(S.ds)[arrastre.k] = [P.iX(m.x), P.iY(m.y)];
+    dibujar();
+  });
+  const soltar = (ev) => {
+    if (!arrastre) return; const m = pos(ev), p = ptsDe(S.ds);
+    if (arrastre.nuevo) { if (dentro(m.x, m.y)) p.push([P.iX(m.x), P.iY(m.y)]); }
+    else if (arrastre.k != null) { if (dentro(m.x, m.y)) p[arrastre.k] = [P.iX(m.x), P.iY(m.y)]; else p.splice(arrastre.k, 1); }
+    const eraPunto = !arrastre.asa && !arrastre.pred && arrastre.asa !== 0; arrastre = null; flot = null; guardar(); dibujar(); if (eraPunto) pintarTabla(true);
+  };
+  cv.addEventListener("pointerup", soltar); cv.addEventListener("pointercancel", () => { arrastre = null; flot = null; dibujar(); });
+
+  // ---------- Tabla de puntos ----------
+  const decX = () => { const s = XR[1] - XR[0]; return s >= 200 ? 0 : s >= 20 ? 1 : 2; }, decY = () => { const s = YR[1] - YR[0]; return s >= 200 ? 0 : s >= 20 ? 1 : 2; };
+  function pintarTabla(forzar) {
+    if (!$("detTabla").open && !forzar) return; if (!forzar && document.activeElement && $("tabla").contains(document.activeElement)) return;
+    const p = ptsDe(S.ds), d = DS[S.ds];
+    $("tabla").innerHTML = `<thead><tr><th>#</th><th>${esc(d.xlab)}</th><th>${esc(d.ylab)}</th><th></th></tr></thead><tbody>` + p.map((q, i) => `<tr><td>${i + 1}</td><td><input type="text" data-i="${i}" data-j="0" value="${+q[0].toFixed(decX())}" aria-label="x del punto ${i + 1}"></td><td><input type="text" data-i="${i}" data-j="1" value="${+q[1].toFixed(decY())}" aria-label="y del punto ${i + 1}"></td><td><button type="button" class="sec" data-quitar="${i}" aria-label="Quitar punto ${i + 1}">✕</button></td></tr>`).join("") + "</tbody>";
+  }
+  $("detTabla").addEventListener("toggle", () => pintarTabla(true));
+  $("tabla").addEventListener("change", (e) => { const inp = e.target.closest("[data-i]"); if (!inp) return; const v = Number(String(inp.value).replace(",", ".").replace(/[−–—]/g, "-")); if (!isFinite(v) || inp.value.trim() === "") { inp.value = ptsDe(S.ds)[+inp.dataset.i][+inp.dataset.j]; return; } ptsDe(S.ds)[+inp.dataset.i][+inp.dataset.j] = v; guardar(); dibujar(); });
+  $("tabla").addEventListener("click", (e) => { const b = e.target.closest("[data-quitar]"); if (!b) return; ptsDe(S.ds).splice(+b.dataset.quitar, 1); guardar(); dibujar(); pintarTabla(true); });
+  $("btnFila").addEventListener("click", () => { ptsDe(S.ds).push([+(xc()).toFixed(decX()), +(yc()).toFixed(decY())]); guardar(); dibujar(); pintarTabla(true); });
+
+  // ---------- Mis datos ----------
+  const leer = (t) => String(t || "").replace(/[−–—]/g, "-").split(/[\s,;]+/).filter(s => s !== "").map(Number);
+  function cargarMis(x, y, nx, ny) {
+    DS.mis.p = x.map((v, i) => [v, y[i]]); DS.mis.xlab = nx || "x"; DS.mis.ylab = ny || "y";
+    S.mis = { p: DS.mis.p, x: DS.mis.xlab, y: DS.mis.ylab }; S.pts.mis = DS.mis.p.map(q => q.slice()); delete S.lin.mis; delete S.predX.mis; S.ds = "mis"; ponerDatos(); guardar(); dibujar(); pintarTabla(true);
+    mostrar("msgMis", "ok", `Se cargaron ${x.length} puntos. Ya aparecen en la gráfica.`);
+  }
+  $("btnMis").addEventListener("click", () => {
+    const x = leer($("datX").value), y = leer($("datY").value);
+    if (x.some(isNaN) || y.some(isNaN)) return mostrar("msgMis", "mal", "Hay algo que no es un número. Usa punto para los decimales y separa los datos con una coma y un espacio.");
+    if (x.length !== y.length) return mostrar("msgMis", "mal", `Tienes ${x.length} datos de x y ${y.length} de y. Deben ser la misma cantidad.`);
+    if (x.length < 2) return mostrar("msgMis", "warn", "Escribe al menos 2 pares de datos.");
+    cargarMis(x, y, $("nomX").value.trim(), $("nomY").value.trim());
+  });
+  $("csv").addEventListener("change", () => {
+    const f = $("csv").files[0]; if (!f) return; const r = new FileReader();
+    r.onload = () => {
+      const filas = String(r.result).replace(/^\uFEFF/, "").split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => l.split(/[;,\t]/).map(c => c.trim().replace(/^"|"$/g, "")));
+      let nx = "x", ny = "y"; if (filas.length && (isNaN(Number(filas[0][0])) || isNaN(Number(filas[0][1])))) { [nx, ny] = filas.shift(); }
+      const ok = filas.filter(c => c.length >= 2 && isFinite(Number(c[0])) && isFinite(Number(c[1])) && c[0] !== "" && c[1] !== "");
+      if (ok.length < 2) return mostrar("msgMis", "mal", "No encontré al menos 2 filas con dos números. El archivo debe tener dos columnas (x, y).");
+      $("nomX").value = nx; $("nomY").value = ny; $("datX").value = ok.map(c => c[0]).join(", "); $("datY").value = ok.map(c => c[1]).join(", ");
+      cargarMis(ok.map(c => Number(c[0])), ok.map(c => Number(c[1])), nx, ny);
+      if (ok.length < filas.length) mostrar("msgMis", "warn", `Se cargaron ${ok.length} puntos; ${filas.length - ok.length} fila(s) no tenían dos números y se omitieron.`);
+    };
+    r.readAsText(f);
+  });
+  if (S.mis) { $("nomX").value = S.mis.x; $("nomY").value = S.mis.y; $("datX").value = S.mis.p.map(q => q[0]).join(", "); $("datY").value = S.mis.p.map(q => q[1]).join(", "); }
+
+  // ---------- Imagen ----------
+  $("btnFoto").addEventListener("click", () => {
+    const Wf = 1000, Hf = 680, k = 2, c = document.createElement("canvas"); c.width = Wf * k; c.height = Hf * k;
+    const ctx = c.getContext("2d"); ctx.setTransform(k, 0, 0, k, 0, 0); escena(ctx, Wf, Hf, true);
+    ctx.fillStyle = GRIS; ctx.font = `11px "Source Sans 3", Arial, sans-serif`; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic"; ctx.fillText("Laboratorio de Estadística · CCH-UNAM", Wf - 10, Hf - 4);
+    c.toBlob((blob) => entregar(blob, "Minimos_cuadrados_" + DS[S.ds].nombre.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_") + ".jpg", "msgFoto", "<b>Imagen lista.</b>"), "image/jpeg", 0.92);
+  });
+
+  ponerDatos(); dibujar();
+  if (location.hash === "#prueba") window.__sim = { pix: (x, y) => ({ x: P.X(x), y: P.Y(y) }), asas: () => { const L = mia(); return asasX().map(x => ({ x: P.X(x), y: P.Y(L.a * x + L.b) })); }, banda: () => Hp, S: () => S, DS, stats };
+  let tR = null, anchoPrevio = window.innerWidth; window.addEventListener("resize", () => { if (window.innerWidth === anchoPrevio) return; anchoPrevio = window.innerWidth; clearTimeout(tR); tR = setTimeout(dibujar, 150); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(dibujar);
+})();
+</script>
+</body>
+</html>
